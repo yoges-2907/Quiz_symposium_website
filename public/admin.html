@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin — Symposium Quiz</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="brand"><span class="mark">Q</span> Symposium Quiz</a>
+    <span class="pill">Admin panel</span>
+  </div>
+  <div class="wrap">
+
+    <!-- LOGIN -->
+    <div id="screen-login" class="center-screen">
+      <div class="card" style="max-width: 420px; width: 100%; text-align: left; border-left-color: var(--accent);">
+        <h2 id="auth-title">Staff login</h2>
+        <p class="muted" id="auth-subtitle">Use your staff email and password.</p>
+        <div id="register-name-wrap" class="hidden">
+          <label for="register-name">Staff name</label>
+          <input type="text" id="register-name" placeholder="e.g. Event Coordinator">
+        </div>
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="staff@college.edu">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="At least 8 characters">
+        <div id="login-error" class="muted" style="color: var(--danger); display:none; margin-top: 8px;"></div>
+        <button class="btn block" style="margin-top:16px;" onclick="submitAuth()" id="auth-btn">Log in</button>
+        <button class="btn secondary block" style="margin-top:10px;" onclick="toggleAuthMode()" id="auth-switch">Create staff account</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="screen-dashboard" class="hidden">
+      <div class="row between wrap">
+        <div>
+          <h1>Your quizzes</h1>
+          <div class="muted" id="staff-account"></div>
+        </div>
+        <div class="row">
+          <button class="btn gold" onclick="showBuilder()">+ Create quiz</button>
+          <button class="btn secondary" onclick="logout()">Log out</button>
+        </div>
+      </div>
+      <div class="card plain" style="margin-bottom:16px;">
+        <strong>Past quiz history</strong>
+        <div class="muted">Every quiz created by this staff account stays here with its participants and results.</div>
+      </div>
+      <div id="quiz-list"></div>
+    </div>
+
+    <!-- BUILDER -->
+    <div id="screen-builder" class="hidden">
+      <div class="row between">
+        <h1>Create a quiz</h1>
+        <button class="btn secondary" onclick="showDashboard()">&larr; Back</button>
+      </div>
+      <div class="card plain">
+        <label for="qz-title">Quiz title</label>
+        <input type="text" id="qz-title" placeholder="e.g. Circuit Sprint — General Round">
+        <div class="grid-2">
+          <div>
+            <label for="qz-duration">Round duration (minutes)</label>
+            <input type="number" id="qz-duration" value="10" min="1">
+          </div>
+        </div>
+      </div>
+
+      <h3>Questions</h3>
+      <div id="qz-questions"></div>
+      <button class="btn secondary" onclick="addQuestion()">+ Add question</button>
+
+      <div class="card plain" style="margin-top: 22px;">
+        <div id="builder-error" class="muted" style="color: var(--danger); display:none; margin-bottom: 10px;"></div>
+        <button class="btn gold" onclick="submitQuiz()">Publish quiz &amp; get join code</button>
+      </div>
+    </div>
+
+    <!-- MONITOR -->
+    <div id="screen-monitor" class="hidden">
+      <div class="row between">
+        <h1 id="mon-title">Quiz</h1>
+        <button class="btn secondary" onclick="showDashboard()">&larr; Back</button>
+      </div>
+
+      <div class="card gold">
+        <div class="row between wrap">
+          <div>
+            <div class="muted">Join code — students enter this on the Join page</div>
+            <code class="code-token" id="mon-code">------</code>
+          </div>
+          <span class="badge" id="mon-status">draft</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card plain">
+          <div class="muted">Joined</div>
+          <div class="stat-num" id="mon-joined">0</div>
+        </div>
+        <div class="card plain">
+          <div class="muted">Submitted</div>
+          <div class="stat-num" id="mon-submitted">0</div>
+        </div>
+      </div>
+
+      <div class="row wrap" style="margin: 10px 0 20px;">
+        <button class="btn" id="mon-start-btn" onclick="startQuiz()">Start round</button>
+        <button class="btn danger" id="mon-end-btn" onclick="endQuiz()">End round now &amp; publish results</button>
+        <a class="btn secondary" id="mon-export-btn" href="#" download>Export results (CSV)</a>
+      </div>
+
+      <div id="mon-results-wrap" class="hidden">
+        <h2>Results</h2>
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>College</th><th>Roll No</th><th>Score</th><th>Time</th><th></th></tr></thead>
+          <tbody id="mon-results-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

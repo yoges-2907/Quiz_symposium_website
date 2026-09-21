@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join Quiz — Symposium Quiz</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="brand"><span class="mark">Q</span> Symposium Quiz</a>
+    <span class="pill" id="top-pill">Student</span>
+  </div>
+  <div class="wrap">
+
+    <!-- JOIN -->
+    <div id="screen-join" class="center-screen">
+      <div class="card" style="max-width: 420px; width: 100%; text-align: left;">
+        <h2>Join a quiz</h2>
+        <label for="j-code">Quiz code</label>
+        <input type="text" id="j-code" placeholder="e.g. AB12CD" style="text-transform: uppercase;">
+        <label for="j-name">Your name</label>
+        <input type="text" id="j-name" placeholder="Full name">
+        <label for="j-college">College name</label>
+        <input type="text" id="j-college" placeholder="College name">
+        <label for="j-roll">Roll number / register number (optional)</label>
+        <input type="text" id="j-roll" placeholder="e.g. 21EC045">
+        <div id="j-error" class="muted" style="color: var(--danger); display:none; margin-top: 8px;"></div>
+        <button class="btn block gold" style="margin-top:16px;" onclick="handleJoin()">Join</button>
+      </div>
+    </div>
+
+    <!-- WAITING ROOM -->
+    <div id="screen-waiting" class="center-screen hidden">
+      <h1 id="w-title">Waiting for host to start…</h1>
+      <p>Stay on this tab — the round begins automatically for everyone at once.</p>
+      <div class="pill" id="w-count" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- QUIZ TAKING -->
+    <div id="screen-quiz" class="hidden">
+      <div class="row between" style="margin-bottom:8px;">
+        <h2 id="q-title" style="margin:0;"></h2>
+        <div class="timer" id="q-timer">--:--</div>
+      </div>
+      <div class="progressbar"><div id="q-progress" style="width:0%;"></div></div>
+      <div class="card danger" style="margin-bottom: 18px;">
+        <p style="margin:0;color:var(--text);"><strong>Stay on this tab.</strong> Switching tabs or apps will automatically close and submit your quiz.</p>
+      </div>
+      <div id="q-questions"></div>
+      <button class="btn gold block" onclick="manualSubmit()">Submit answers</button>
+    </div>
+
+    <!-- LOCKED (auto-submitted) -->
+    <div id="screen-locked" class="center-screen hidden">
+      <h1 style="color: var(--danger);">Quiz closed</h1>
+      <p id="locked-reason">You switched away from the tab, so your answers were submitted automatically.</p>
+      <p class="muted">Results will appear here once the round ends.</p>
+    </div>
+
+    <!-- SUBMITTED / WAITING FOR RESULTS -->
+    <div id="screen-submitted" class="center-screen hidden">
+      <h1>Answers submitted ✓</h1>
+      <p>Hang tight — the leaderboard appears here as soon as the round ends or everyone has submitted.</p>
+    </div>
+
+    <!-- RESULTS -->
+    <div id="screen-results" class="hidden">
+      <h1 id="r-title">Results</h1>
+      <table>
+        <thead><tr><th>#</th><th>Name</th><th>College</th><th>Roll No</th><th>Score</th><th>Time</th></tr></thead>
+        <tbody id="r-body"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/api.js"></script>
+<script src="js/student.js"></script>
+</body>
+</html>
