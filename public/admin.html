@@ -20,7 +20,7 @@
         <p class="muted" id="auth-subtitle">Use your staff email and password.</p>
         <div id="register-name-wrap" class="hidden">
           <label for="register-name">Staff name</label>
-          <input type="text" id="register-name" placeholder="Event Coordinator">
+          <input type="text" id="register-name" placeholder="e.g. Event Coordinator">
         </div>
         <label for="login-email">Email</label>
         <input type="email" id="login-email" placeholder="staff@college.edu">
@@ -109,7 +109,14 @@
       <div class="row wrap" style="margin: 10px 0 20px;">
         <button class="btn" id="mon-start-btn" onclick="startQuiz()">Start round</button>
         <button class="btn danger" id="mon-end-btn" onclick="endQuiz()">End round now &amp; publish results</button>
+        <button class="btn secondary" id="mon-duplicate-btn" style="display:none;" onclick="duplicateQuiz(currentQuizId)">Run again with a new code</button>
         <a class="btn secondary" id="mon-export-btn" href="#" download>Export results (CSV)</a>
+        <a class="btn secondary" id="mon-lobby-btn" href="#" target="_blank">Open corridor display &#8599;</a>
+      </div>
+
+      <div id="mon-roster-wrap" class="card plain hidden">
+        <div class="muted" style="margin-bottom:8px;">Joined so far — check names off before you start</div>
+        <div id="mon-roster"></div>
       </div>
 
       <div id="mon-results-wrap" class="hidden">

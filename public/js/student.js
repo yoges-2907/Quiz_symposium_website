@@ -8,10 +8,69 @@ let submitted = false;
 let socket = null;
 let timerInterval = null;
 
+const SESSION_KEY = 'quiz_session';
+
+function saveSession() {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ quizId, participantId, answers }));
+}
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
 function screen(name) {
   ['join', 'waiting', 'quiz', 'locked', 'submitted', 'results'].forEach((s) => {
     document.getElementById(`screen-${s}`).classList.toggle('hidden', s !== name);
   });
+}
+
+// ---------- Resume after a refresh ----------
+// A page refresh should NOT lose progress or count as leaving the quiz. We
+// only ever auto-submit for a genuine tab/app switch (the Page Visibility
+// API below), never for a reload — so on load we first check whether this
+// browser already has a session for a quiz and silently reconnect to it.
+async function init() {
+  const saved = localStorage.getItem(SESSION_KEY);
+  if (!saved) return screen('join');
+  let sess;
+  try {
+    sess = JSON.parse(saved);
+  } catch {
+    return screen('join');
+  }
+  try {
+    const data = await apiGet(`/api/quizzes/${sess.quizId}/rejoin/${sess.participantId}`);
+    quizId = sess.quizId;
+    participantId = sess.participantId;
+    quiz = data.quiz;
+    answers = sess.answers || {};
+    submitted = !!data.participant.submitted;
+    connectSocket();
+    if (submitted) {
+      if (data.participant.autoSubmitted && data.participant.reason === 'tab_switch') {
+        screen('locked');
+      } else if (quiz.status === 'ended') {
+        showResults();
+      } else {
+        screen('submitted');
+      }
+    } else {
+      routeByStatus();
+    }
+  } catch (e) {
+    clearSession();
+    screen('join');
+  }
+}
+
+function leaveAndJoinAnother() {
+  clearSession();
+  quizId = participantId = quiz = null;
+  answers = {};
+  submitted = false;
+  clearInterval(timerInterval);
+  if (socket) socket.disconnect();
+  socket = null;
+  screen('join');
 }
 
 // ---------- Join ----------
@@ -33,6 +92,8 @@ async function handleJoin() {
     participantId = data.participantId;
     quiz = data.quiz;
     quizId = quiz.id;
+    answers = {};
+    saveSession();
     connectSocket();
     routeByStatus();
   } catch (e) {
@@ -51,11 +112,16 @@ function connectSocket() {
   });
   socket.on('quiz-ended', () => {
     if (!submitted) {
-      // Round ended before this student submitted — show locked/expired state.
       submitted = true;
       clearInterval(timerInterval);
     }
     showResults();
+  });
+  socket.on('participant-joined', (p) => {
+    if (!document.getElementById('screen-waiting').classList.contains('hidden')) {
+      addRosterChip(p.name);
+      document.getElementById('w-count').textContent = `${p.count} joined so far`;
+    }
   });
 }
 
@@ -68,7 +134,29 @@ function routeByStatus() {
   } else {
     screen('waiting');
     document.getElementById('w-title').textContent = `"${quiz.title}" — waiting for host to start…`;
+    loadRoster();
   }
+}
+
+async function loadRoster() {
+  try {
+    const data = await apiGet(`/api/quizzes/${quizId}/roster`);
+    const wrap = document.getElementById('w-roster');
+    wrap.innerHTML = '';
+    data.participants.forEach((p) => addRosterChip(p.name));
+    document.getElementById('w-count').textContent = `${data.participants.length} joined so far`;
+  } catch (e) {
+    // Non-critical — the waiting screen still works without the roster.
+  }
+}
+
+function addRosterChip(name) {
+  const wrap = document.getElementById('w-roster');
+  const chip = document.createElement('span');
+  chip.className = 'pill';
+  chip.style.margin = '4px';
+  chip.textContent = name;
+  wrap.appendChild(chip);
 }
 
 // ---------- Quiz taking ----------
@@ -91,8 +179,8 @@ function renderQuestions() {
         ${q.options
           .map(
             (opt, oi) => `
-          <label class="option" id="opt-${q.id}-${oi}">
-            <input type="radio" name="ans-${q.id}" value="${oi}" onchange="selectOption('${q.id}', ${oi})">
+          <label class="option ${answers[q.id] === oi ? 'selected' : ''}" id="opt-${q.id}-${oi}">
+            <input type="radio" name="ans-${q.id}" value="${oi}" ${answers[q.id] === oi ? 'checked' : ''} onchange="selectOption('${q.id}', ${oi})">
             <span>${escapeHtml(opt)}</span>
           </label>`
           )
@@ -101,10 +189,12 @@ function renderQuestions() {
     </div>`
     )
     .join('');
+  updateProgress();
 }
 
 function selectOption(questionId, idx) {
   answers[questionId] = idx;
+  saveSession();
   quiz.questions
     .find((q) => q.id === questionId)
     .options.forEach((_, oi) => {
@@ -139,35 +229,19 @@ function startTimerLoop() {
 }
 
 // ---------- Tab-switch guard ----------
+// Deliberately visibilitychange ONLY. A plain page refresh does not fire
+// this event in a way that would falsely trigger it, which is what lets a
+// refresh resume safely (see init() above) instead of being treated as
+// cheating. Genuinely switching to another tab or app does fire it.
 function attachTabSwitchGuard() {
   document.addEventListener('visibilitychange', onVisibilityChange);
-  window.addEventListener('pagehide', onPageHide);
 }
-
 function detachTabSwitchGuard() {
   document.removeEventListener('visibilitychange', onVisibilityChange);
-  window.removeEventListener('pagehide', onPageHide);
 }
-
 function onVisibilityChange() {
   if (document.hidden && !submitted && quiz && quiz.status === 'active') {
     autoSubmit('tab_switch');
-  }
-}
-
-function onPageHide() {
-  // Best-effort: if the tab is being closed/navigated away mid-quiz, fire a
-  // beacon so the submission still lands even though the page can't wait
-  // for a normal fetch response.
-  if (!submitted && quiz && quiz.status === 'active' && participantId) {
-    const payload = JSON.stringify({
-      participantId,
-      answers: answersToArray(),
-      autoSubmitted: true,
-      reason: 'tab_closed',
-    });
-    navigator.sendBeacon &&
-      navigator.sendBeacon(`/api/quizzes/${quizId}/submit`, new Blob([payload], { type: 'application/json' }));
   }
 }
 
@@ -179,26 +253,19 @@ function answersToArray() {
 async function manualSubmit() {
   await doSubmit(false, null);
 }
-
 async function autoSubmit(reason) {
   await doSubmit(true, reason);
 }
-
 async function doSubmit(autoSubmitted, reason) {
   if (submitted) return;
   submitted = true;
   clearInterval(timerInterval);
   detachTabSwitchGuard();
   try {
-    await apiPost(`/api/quizzes/${quizId}/submit`, {
-      participantId,
-      answers: answersToArray(),
-      autoSubmitted,
-      reason,
-    });
+    await apiPost(`/api/quizzes/${quizId}/submit`, { participantId, answers: answersToArray(), autoSubmitted, reason });
   } catch (e) {
-    // Even if the network call fails we keep the UI locked — the reason is
-    // shown so a student can flag it to the organizers if needed.
+    // Keep the UI locked either way — the reason is shown so a student can
+    // flag it to the organizers if the network call itself failed.
   }
   if (autoSubmitted && reason === 'tab_switch') {
     screen('locked');
@@ -237,3 +304,5 @@ async function showResults() {
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+
+init();

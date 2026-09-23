@@ -22,13 +22,9 @@
         <label for="j-name">Your name</label>
         <input type="text" id="j-name" placeholder="Full name">
         <label for="j-college">College name</label>
-        <input type="text" id="j-college" placeholder="College name">
-        <label for="j-roll">Team Name</label>
-<<<<<<< HEAD
-        <input type="text" id="j-roll" placeholder="Your Team Name">
-=======
-        <input type="text" id="j-roll" placeholder="Enter Team Name">
->>>>>>> 8a9dc409ee8cac1f6a3ea95b14f8ec655c409747
+        <input type="text" id="j-college" placeholder="e.g. JKKN College of Engineering">
+        <label for="j-roll">Roll number / register number (optional)</label>
+        <input type="text" id="j-roll" placeholder="e.g. 21EC045">
         <div id="j-error" class="muted" style="color: var(--danger); display:none; margin-top: 8px;"></div>
         <button class="btn block gold" style="margin-top:16px;" onclick="handleJoin()">Join</button>
       </div>
@@ -37,8 +33,9 @@
     <!-- WAITING ROOM -->
     <div id="screen-waiting" class="center-screen hidden">
       <h1 id="w-title">Waiting for host to start…</h1>
-      <p>Stay on this tab — the round begins automatically for everyone at once.</p>
+      <p>Stay on this tab — the round begins automatically for everyone at once. Refreshing this page is fine too, you won't lose your place.</p>
       <div class="pill" id="w-count" style="margin-top:10px;"></div>
+      <div id="w-roster" style="margin-top:18px; max-width:600px;"></div>
     </div>
 
     <!-- QUIZ TAKING -->
@@ -70,7 +67,10 @@
 
     <!-- RESULTS -->
     <div id="screen-results" class="hidden">
-      <h1 id="r-title">Results</h1>
+      <div class="row between">
+        <h1 id="r-title">Results</h1>
+        <button class="btn secondary small" onclick="leaveAndJoinAnother()">Join a different quiz</button>
+      </div>
       <table>
         <thead><tr><th>#</th><th>Name</th><th>College</th><th>Roll No</th><th>Score</th><th>Time</th></tr></thead>
         <tbody id="r-body"></tbody>

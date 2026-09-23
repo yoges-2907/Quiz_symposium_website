@@ -1,7 +1,7 @@
 {
   "name": "symposium-quiz",
-  "version": "1.0.0",
-  "description": "Live quiz platform for college symposiums - admin quiz builder, tab-switch auto-submit, live leaderboard.",
+  "version": "3.0.0",
+  "description": "Live quiz platform for college symposiums - staff accounts, MongoDB persistence, reusable quizzes, corridor lobby display, tab-switch auto-submit.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -10,7 +10,10 @@
     "node": ">=18"
   },
   "dependencies": {
+    "compression": "^1.7.4",
+    "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "mongodb": "^6.9.0",
     "socket.io": "^4.7.5"
   }
 }

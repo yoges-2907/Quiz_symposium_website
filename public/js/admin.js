@@ -34,14 +34,24 @@ async function submitAuth() {
 }
 async function checkAuthAndStart() {
   if(!token) return screen('login');
-  try { const d=await apiGet('/api/auth/me',{headers:authHeaders()}); currentUser=d.user; showDashboard(); }
+  try {
+    const d=await apiGet('/api/auth/me',{headers:authHeaders()}); currentUser=d.user;
+    // Refreshing mid-event shouldn't bounce you back to the dashboard —
+    // reopen whichever quiz's monitor you had open, if it's still yours.
+    const savedQuiz = localStorage.getItem('admin_open_quiz');
+    if (savedQuiz) {
+      try { await openMonitor(savedQuiz); return; } catch { localStorage.removeItem('admin_open_quiz'); }
+    }
+    showDashboard();
+  }
   catch { token=''; localStorage.removeItem('staff_token'); screen('login'); }
 }
 async function logout() {
   try { await apiPost('/api/auth/logout',{}, {headers:authHeaders()}); } catch {}
-  token=''; currentUser=null; localStorage.removeItem('staff_token'); screen('login');
+  token=''; currentUser=null; localStorage.removeItem('staff_token'); localStorage.removeItem('admin_open_quiz'); screen('login');
 }
 async function showDashboard() {
+  localStorage.removeItem('admin_open_quiz');
   screen('dashboard');
   document.getElementById('staff-account').textContent = `${currentUser.name} · ${currentUser.email}`;
   const list=await apiGet('/api/admin/quizzes',{headers:authHeaders()});
@@ -58,7 +68,8 @@ async function showDashboard() {
         </div>
         <div class="row">
           <span class="badge ${q.status}">${q.status}</span>
-          <button class="btn small" onclick="openMonitor('${q.id}')">View results</button>
+          <button class="btn small" onclick="openMonitor('${q.id}')">Open</button>
+          <button class="btn secondary small" onclick="duplicateQuiz('${q.id}')" title="Run this same quiz again with a new join code">Reuse</button>
           <button class="icon-btn" onclick="deleteQuiz('${q.id}')">Delete</button>
         </div>
       </div>
@@ -67,6 +78,11 @@ async function showDashboard() {
 async function deleteQuiz(id){
   if(!confirm('Delete this quiz and all its submissions?')) return;
   await apiDelete(`/api/admin/quizzes/${id}`,{headers:authHeaders()}); showDashboard();
+}
+async function duplicateQuiz(id){
+  const clone = await apiPost(`/api/admin/quizzes/${id}/duplicate`,{},{headers:authHeaders()});
+  showToast(`New code ${clone.id} ready — same questions, fresh round.`);
+  openMonitor(clone.id);
 }
 function showBuilder(){
   screen('builder'); document.getElementById('qz-title').value=''; document.getElementById('qz-duration').value=10;
@@ -107,12 +123,36 @@ async function submitQuiz(){
   try{const q=await apiPost('/api/admin/quizzes',{title,durationMinutes,questions},{headers:authHeaders()});openMonitor(q.id);}
   catch(e){err.textContent=e.message;err.style.display='block';}
 }
-async function openMonitor(id){currentQuizId=id;screen('monitor');await refreshMonitor();connectSocket(id);}
+async function openMonitor(id){
+  currentQuizId=id;
+  localStorage.setItem('admin_open_quiz', id);
+  screen('monitor');
+  await refreshMonitor();
+  connectSocket(id);
+  if (document.getElementById('mon-status').textContent === 'draft') loadJoinedNames(id);
+}
 function connectSocket(id){
   if(!socket)socket=io();socket.emit('join-room',{quizId:id,role:'admin'});
-  socket.off('stats-update');socket.off('quiz-started');socket.off('quiz-ended');
+  socket.off('stats-update');socket.off('quiz-started');socket.off('quiz-ended');socket.off('participant-joined');
   socket.on('stats-update',s=>{document.getElementById('mon-joined').textContent=s.joined;document.getElementById('mon-submitted').textContent=s.submitted;});
   socket.on('quiz-started',refreshMonitor);socket.on('quiz-ended',refreshMonitor);
+  socket.on('participant-joined',p=>{
+    if(document.getElementById('mon-status').textContent==='draft') addJoinedChip(p.name);
+  });
+}
+async function loadJoinedNames(id){
+  try {
+    const data = await apiGet(`/api/quizzes/${id}/roster`);
+    const wrap = document.getElementById('mon-roster');
+    wrap.innerHTML='';
+    data.participants.forEach(p=>addJoinedChip(p.name));
+  } catch {}
+}
+function addJoinedChip(name){
+  const wrap=document.getElementById('mon-roster');
+  const chip=document.createElement('span');
+  chip.className='pill'; chip.style.margin='4px'; chip.textContent=name;
+  wrap.appendChild(chip);
 }
 async function refreshMonitor(){
   const q=await apiGet(`/api/admin/quizzes/${currentQuizId}`,{headers:authHeaders()});
@@ -120,8 +160,12 @@ async function refreshMonitor(){
   document.getElementById('mon-status').textContent=q.status;document.getElementById('mon-status').className=`badge ${q.status}`;
   document.getElementById('mon-joined').textContent=q.stats.joined;document.getElementById('mon-submitted').textContent=q.stats.submitted;
   document.getElementById('mon-export-btn').href=`/api/admin/quizzes/${q.id}/export.csv?token=${encodeURIComponent(token)}`;
+  document.getElementById('mon-lobby-btn').href=`lobby.html?code=${q.id}`;
   document.getElementById('mon-start-btn').style.display=q.status==='draft'?'inline-flex':'none';
   document.getElementById('mon-end-btn').style.display=q.status==='active'?'inline-flex':'none';
+  document.getElementById('mon-duplicate-btn').style.display=q.status==='ended'?'inline-flex':'none';
+  const rosterWrap=document.getElementById('mon-roster-wrap');
+  rosterWrap.classList.toggle('hidden', q.status!=='draft');
   const rw=document.getElementById('mon-results-wrap');
   if(q.status==='ended'){rw.classList.remove('hidden');await loadMonitorResults(q.id);}else rw.classList.add('hidden');
 }

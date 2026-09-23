@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lobby — Symposium Quiz</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .roster-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:28px; }
+  .roster-chip {
+    background: var(--surface-raised); border:1px solid var(--border); border-radius:999px;
+    padding:10px 20px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.05rem;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="index.html" class="brand"><span class="mark">Q</span> Symposium Quiz</a>
+    <span class="pill">Corridor display</span>
+  </div>
+  <div class="wrap">
+    <div class="center-screen" style="min-height:40vh;">
+      <h1 id="l-title" class="display" style="font-size:2.2rem;">Loading…</h1>
+      <p class="muted">Join at this site using the code below</p>
+      <code class="code-token" id="l-code" style="font-size:2rem; padding:14px 30px;">------</code>
+      <div class="stat-num" id="l-count" style="margin-top:18px;">0</div>
+      <p class="muted">students joined</p>
+      <div id="l-status" class="badge draft" style="margin-top:6px;">draft</div>
+    </div>
+    <div class="roster-grid" id="l-roster"></div>
+  </div>
+<script src="/socket.io/socket.io.js"></script>
+<script src="js/api.js"></script>
+<script src="js/lobby.js"></script>
+</body>
+</html>
