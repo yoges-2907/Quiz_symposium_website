@@ -8,9 +8,11 @@
 <style>
   .roster-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:28px; }
   .roster-chip {
-    background: var(--surface-raised); border:1px solid var(--border); border-radius:999px;
-    padding:10px 20px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:1.05rem;
+    background: var(--surface-raised); border:1px solid var(--border); border-radius:12px;
+    padding:12px 20px; text-align:left; min-width:180px;
   }
+  .roster-chip .r-name { font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:1.05rem; }
+  .roster-chip .r-meta { color: var(--text-muted); font-size:0.82rem; margin-top:2px; }
 </style>
 </head>
 <body>
