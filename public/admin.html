@@ -57,7 +57,7 @@
     <!-- BUILDER -->
     <div id="screen-builder" class="hidden">
       <div class="row between">
-        <h1>Create a quiz</h1>
+        <h1 id="builder-heading">Create a quiz</h1>
         <button class="btn secondary" onclick="showDashboard()">&larr; Back</button>
       </div>
       <div class="card plain">
@@ -77,7 +77,7 @@
 
       <div class="card plain" style="margin-top: 22px;">
         <div id="builder-error" class="muted" style="color: var(--danger); display:none; margin-bottom: 10px;"></div>
-        <button class="btn gold" onclick="submitQuiz()">Publish quiz &amp; get join code</button>
+        <button class="btn gold" onclick="submitQuiz()" id="builder-submit-btn">Publish quiz &amp; get join code</button>
       </div>
     </div>
 
