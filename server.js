@@ -82,7 +82,7 @@ function publicQuiz(quiz) {
     durationSeconds: quiz.durationSeconds,
     status: quiz.status,
     startedAt: quiz.startedAt,
-    questions: quiz.questions.map((q) => ({ id: q.id, text: q.text, options: q.options, marks: q.marks })),
+    questions: quiz.questions.map((q) => ({ id: q.id, text: q.text, options: q.options, marks: q.marks, isCode: q.isCode })),
   };
 }
 function quizParticipants(id) {
@@ -184,10 +184,11 @@ function buildQuiz({ title, durationMinutes, questions, ownerId }) {
     durationSeconds: Math.max(30, Math.round((Number(durationMinutes) || 10) * 60)),
     questions: questions.map((q, i) => ({
       id: `q${i + 1}`,
-      text: String(q.text).slice(0, 1000),
+      text: String(q.text).slice(0, 4000),
       options: q.options.map((o) => String(o).slice(0, 300)),
       correctIndex: q.correctIndex,
       marks: Number(q.marks) > 0 ? Number(q.marks) : 1,
+      isCode: !!q.isCode,
     })),
     status: 'draft',
     createdAt: Date.now(),
@@ -255,7 +256,7 @@ app.post('/api/admin/quizzes/:id/duplicate', requireStaff, (req, res) => {
   const clone = buildQuiz({
     title: q.title,
     durationMinutes: q.durationSeconds / 60,
-    questions: q.questions.map((qq) => ({ text: qq.text, options: qq.options, correctIndex: qq.correctIndex, marks: qq.marks })),
+    questions: q.questions.map((qq) => ({ text: qq.text, options: qq.options, correctIndex: qq.correctIndex, marks: qq.marks, isCode: qq.isCode })),
     ownerId: req.userId,
   });
   db.quizzes[clone.id] = clone;
