@@ -22,9 +22,9 @@
         <label for="j-name">Your name</label>
         <input type="text" id="j-name" placeholder="Full name">
         <label for="j-college">College name</label>
-        <input type="text" id="j-college" placeholder="Your College Name">
-        <label for="j-roll">Team Name</label>
-        <input type="text" id="j-roll" placeholder="Enter Your Team Name">
+        <input type="text" id="j-college" placeholder="Your college name">
+        <label for="j-team">Team name (optional)</label>
+        <input type="text" id="j-team" placeholder="e.g. Circuit Breakers">
         <div id="j-error" class="muted" style="color: var(--danger); display:none; margin-top: 8px;"></div>
         <button class="btn block gold" style="margin-top:16px;" onclick="handleJoin()">Join</button>
       </div>
@@ -72,7 +72,7 @@
         <button class="btn secondary small" onclick="leaveAndJoinAnother()">Join a different quiz</button>
       </div>
       <table>
-        <thead><tr><th>#</th><th>Name</th><th>College</th><th>Roll No</th><th>Score</th><th>Time</th></tr></thead>
+        <thead><tr><th>#</th><th>Name</th><th>College</th><th>Team</th><th>Score</th><th>Time</th></tr></thead>
         <tbody id="r-body"></tbody>
       </table>
     </div>
