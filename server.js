@@ -291,13 +291,13 @@ app.get('/api/admin/quizzes/:id/export.csv', requireStaff, (req, res) => {
   const ps = quizParticipants(q.id).sort(
     (a, b) => (b.score || 0) - (a.score || 0) || (a.timeTakenMs || Infinity) - (b.timeTakenMs || Infinity)
   );
-  const rows = [['Rank', 'Name', 'College', 'Roll No', 'Score', 'Max Score', 'Time Taken (s)', 'Auto-submitted']];
+  const rows = [['Rank', 'Name', 'College', 'Team Name', 'Score', 'Max Score', 'Time Taken (s)', 'Auto-submitted']];
   ps.forEach((p, i) =>
     rows.push([
       i + 1,
       p.name,
       p.college || '',
-      p.rollNo || '',
+      p.teamName || '',
       p.submitted ? p.score : '',
       q.questions.reduce((s, x) => s + (x.marks || 1), 0),
       p.timeTakenMs ? Math.round(p.timeTakenMs / 1000) : '',
@@ -313,7 +313,7 @@ app.get('/api/admin/quizzes/:id/export.csv', requireStaff, (req, res) => {
 // ---------- Public / student ----------
 
 // Lightweight roster for the corridor/lobby display and the student waiting
-// room — names and colleges only, no roll numbers or scores.
+// room — names and colleges only, no team names or scores.
 app.get('/api/quizzes/:id/roster', (req, res) => {
   const q = db.quizzes[req.params.id];
   if (!q) return res.status(404).json({ error: 'Quiz not found' });
@@ -321,7 +321,7 @@ app.get('/api/quizzes/:id/roster', (req, res) => {
   res.json({
     title: q.title,
     status: q.status,
-    participants: ps.map((p) => ({ name: p.name, college: p.college })),
+    participants: ps.map((p) => ({ name: p.name, college: p.college, teamName: p.teamName })),
   });
 });
 
@@ -331,7 +331,7 @@ app.post('/api/quizzes/:id/join', (req, res) => {
   if (q.status === 'ended') return res.status(400).json({ error: 'This quiz has already ended' });
   const name = String(req.body?.name || '').trim();
   const college = String(req.body?.college || '').trim();
-  const rollNo = String(req.body?.rollNo || '').trim();
+  const teamName = String(req.body?.teamName || '').trim();
   if (!name) return res.status(400).json({ error: 'Name is required' });
   if (!college) return res.status(400).json({ error: 'College name is required' });
   const id = crypto.randomUUID();
@@ -340,7 +340,7 @@ app.post('/api/quizzes/:id/join', (req, res) => {
     quizId: q.id,
     name: name.slice(0, 100),
     college: college.slice(0, 150),
-    rollNo: rollNo.slice(0, 50),
+    teamName: teamName.slice(0, 100),
     joinedAt: Date.now(),
     submitted: false,
     autoSubmitted: false,
@@ -355,7 +355,7 @@ app.post('/api/quizzes/:id/join', (req, res) => {
   persistParticipant(participant);
   const ps = quizParticipants(q.id);
   io.to(`admin-${q.id}`).emit('stats-update', { joined: ps.length, submitted: ps.filter((p) => p.submitted).length });
-  io.to(`quiz-${q.id}`).emit('participant-joined', { name: participant.name, college: participant.college, count: ps.length });
+  io.to(`quiz-${q.id}`).emit('participant-joined', { name: participant.name, college: participant.college, teamName: participant.teamName, count: ps.length });
   res.json({ participantId: id, quiz: publicQuiz(q) });
 });
 
@@ -407,7 +407,7 @@ app.get('/api/quizzes/:id/results', (req, res) => {
       id: p.id,
       name: p.name,
       college: p.college,
-      rollNo: p.rollNo,
+      teamName: p.teamName,
       score: p.score,
       maxScore: p.maxScore,
       timeTakenMs: p.timeTakenMs,
