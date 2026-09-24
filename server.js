@@ -20,7 +20,18 @@ const io = new Server(server);
 
 app.use(compression()); // gzip responses — helps on the free tier's shared CPU.
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
+// Serve with Cache-Control: no-cache — the browser still keeps a local copy
+// and uses ETags for a fast conditional request, but it always re-checks
+// with the server first. That means every deploy takes effect immediately
+// for everyone, with no "hard refresh" or stale-cache confusion, while
+// still avoiding a full re-download when nothing changed.
+app.use(
+  express.static(path.join(__dirname, 'public'), {
+    etag: true,
+    lastModified: true,
+    setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache'),
+  })
+);
 
 const db = { users: {}, sessions: {}, quizzes: {}, participants: {} };
 
