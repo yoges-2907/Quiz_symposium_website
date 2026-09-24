@@ -14,7 +14,7 @@ async function init() {
   const socket = io();
   socket.emit('join-room', { quizId, role: 'student' });
   socket.on('participant-joined', (p) => {
-    addChip(p.name);
+    addChip(p);
     document.getElementById('l-count').textContent = p.count;
   });
   socket.on('quiz-started', () => {
@@ -39,18 +39,26 @@ async function refresh() {
     document.getElementById('l-status').className = `badge ${data.status}`;
     const wrap = document.getElementById('l-roster');
     wrap.innerHTML = '';
-    data.participants.forEach((p) => addChip(p.name));
+    data.participants.forEach((p) => addChip(p));
   } catch (e) {
     document.getElementById('l-title').textContent = 'Quiz code not found';
   }
 }
 
-function addChip(name) {
+function addChip(p) {
   const wrap = document.getElementById('l-roster');
   const chip = document.createElement('div');
   chip.className = 'roster-chip';
-  chip.textContent = name;
+  const meta = [p.college, p.teamName].filter(Boolean).join(' · ');
+  chip.innerHTML = `
+    <div class="r-name">${escapeHtml(p.name)}</div>
+    ${meta ? `<div class="r-meta">${escapeHtml(meta)}</div>` : ''}
+  `;
   wrap.appendChild(chip);
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 init();
