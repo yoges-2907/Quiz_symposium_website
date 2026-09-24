@@ -265,6 +265,21 @@ code.code-token {
   display: inline-block;
 }
 
+.code-block {
+  font-family: 'Space Grotesk', 'Courier New', monospace;
+  background: #0A0E1A;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+  color: #D6E1FF;
+  margin: 0 0 14px 0;
+}
+
 
 /* v2 additions */
 #staff-account { margin-top: 2px; }
