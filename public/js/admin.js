@@ -21,6 +21,13 @@ function toggleAuthMode() {
   document.getElementById('auth-switch').textContent = authMode === 'login' ? 'Create staff account' : 'Back to login';
   document.getElementById('login-error').style.display = 'none';
 }
+function togglePasswordVisibility() {
+  const input = document.getElementById('login-password');
+  const btn = document.getElementById('pw-toggle-btn');
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? 'Show' : 'Hide';
+}
 async function submitAuth() {
   const email=document.getElementById('login-email').value.trim();
   const password=document.getElementById('login-password').value;
@@ -172,7 +179,7 @@ async function refreshMonitor(){
 async function loadMonitorResults(id){
   const d=await apiGet(`/api/quizzes/${id}/results`),body=document.getElementById('mon-results-body');
   body.innerHTML=d.participants.map(p=>`<tr class="rank-${p.rank}"><td>${p.rank}</td><td>${escapeHtml(p.name)}</td>
-    <td>${escapeHtml(p.college||'—')}</td><td>${escapeHtml(p.rollNo||'—')}</td><td>${p.score} / ${p.maxScore}</td>
+    <td>${escapeHtml(p.college||'—')}</td><td>${escapeHtml(p.teamName||'—')}</td><td>${p.score} / ${p.maxScore}</td>
     <td>${fmtTime(p.timeTakenMs)}</td><td>${p.autoSubmitted?'<span class="muted">tab-switch auto-submit</span>':''}</td></tr>`).join('');
 }
 async function startQuiz(){await apiPost(`/api/admin/quizzes/${currentQuizId}/start`,{}, {headers:authHeaders()});refreshMonitor();}
