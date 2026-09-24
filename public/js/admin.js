@@ -5,6 +5,7 @@ let socket = null;
 let currentQuizId = null;
 let questionCount = 0;
 let authMode = 'login';
+let editingQuizId = null;
 
 function authHeaders() { return { Authorization: `Bearer ${token}` }; }
 function screen(name) {
@@ -76,6 +77,7 @@ async function showDashboard() {
         <div class="row">
           <span class="badge ${q.status}">${q.status}</span>
           <button class="btn small" onclick="openMonitor('${q.id}')">Open</button>
+          <button class="btn secondary small" onclick="editQuiz('${q.id}')" title="Create an editable copy of this quiz">Edit</button>
           <button class="btn secondary small" onclick="duplicateQuiz('${q.id}')" title="Run this same quiz again with a new join code">Reuse</button>
           <button class="icon-btn" onclick="deleteQuiz('${q.id}')">Delete</button>
         </div>
@@ -92,11 +94,32 @@ async function duplicateQuiz(id){
   openMonitor(clone.id);
 }
 function showBuilder(){
-  screen('builder'); document.getElementById('qz-title').value=''; document.getElementById('qz-duration').value=10;
+  editingQuizId = null;
+  screen('builder'); document.getElementById('builder-heading').textContent='Create a quiz';
+  document.getElementById('qz-title').value=''; document.getElementById('qz-duration').value=10;
   document.getElementById('qz-questions').innerHTML=''; document.getElementById('builder-error').style.display='none';
+  document.getElementById('builder-submit-btn').textContent='Publish quiz & get join code';
   questionCount=0; addQuestion();
 }
-function addQuestion(){
+
+async function editQuiz(id){
+  try {
+    const q = await apiGet(`/api/admin/quizzes/${id}`, {headers:authHeaders()});
+    editingQuizId = id;
+    screen('builder');
+    document.getElementById('builder-heading').textContent='Edit & reuse quiz';
+    document.getElementById('qz-title').value=q.title;
+    document.getElementById('qz-duration').value=Math.max(1, Math.round(q.durationSeconds / 60));
+    document.getElementById('qz-questions').innerHTML='';
+    document.getElementById('builder-error').style.display='none';
+    document.getElementById('builder-submit-btn').textContent='Save changes & create new quiz';
+    questionCount=0;
+    q.questions.forEach(question => addQuestion(question));
+  } catch(e) {
+    showToast(e.message || 'Unable to open quiz for editing.');
+  }
+}
+function addQuestion(existing=null){
   questionCount++; const qid=questionCount; const wrap=document.createElement('div');
   wrap.className='qbuilder-q'; wrap.id=`qbuild-${qid}`;
   wrap.innerHTML=`<div class="row between"><strong>Question ${qid}</strong>
@@ -111,7 +134,22 @@ function addQuestion(){
     <label>Options — mark the correct one</label><div class="q-options"></div>
     <button class="btn secondary small" type="button" onclick="addOption(this)">+ Add option</button>`;
   document.getElementById('qz-questions').appendChild(wrap);
-  const ow=wrap.querySelector('.q-options'); for(let i=0;i<4;i++) addOptionTo(ow,qid);
+  const ow=wrap.querySelector('.q-options');
+  if(existing){
+    const options=Array.isArray(existing.options) ? existing.options : [];
+    const optionCount=Math.max(2, options.length);
+    for(let i=0;i<optionCount;i++) addOptionTo(ow,qid);
+    options.forEach((value,i)=>{ const input=ow.children[i]?.querySelector('.q-option-text'); if(input) input.value=value; });
+    const correct=ow.querySelector(`input[type=radio][value="${Number(existing.correctIndex)}"]`);
+    if(correct) correct.checked=true;
+    wrap.querySelector('.q-text').value=existing.text || '';
+    wrap.querySelector('.q-marks').value=Number(existing.marks) || 1;
+    const code=wrap.querySelector('.q-iscode'); code.checked=!!existing.isCode;
+    onCodeToggle(code,qid);
+    autoResize(wrap.querySelector('.q-text'));
+  } else {
+    for(let i=0;i<4;i++) addOptionTo(ow,qid);
+  }
 }
 function addOption(btn){ addOptionTo(btn.previousElementSibling,btn.closest('.qbuilder-q').id.split('-')[1]); }
 function autoResize(el) {
@@ -130,8 +168,23 @@ function addOptionTo(ow,qid){
   const idx=ow.children.length,row=document.createElement('div');row.className='row';row.style.marginBottom='8px';
   row.innerHTML=`<input type="radio" name="correct-${qid}" value="${idx}" ${idx===0?'checked':''} style="width:17px;height:17px;flex-shrink:0;">
   <input type="text" class="q-option-text" placeholder="Option ${idx+1}" style="flex:1;">
-  <button class="icon-btn" type="button" onclick="this.parentElement.remove()">✕</button>`;
+  <button class="icon-btn" type="button" onclick="removeOption(this)">✕</button>`;
   ow.appendChild(row);
+}
+function removeOption(button){
+  const row=button.parentElement;
+  const options=row.parentElement;
+  const wasChecked=row.querySelector('input[type=radio]')?.checked;
+  row.remove();
+  Array.from(options.children).forEach((item,i)=>{
+    const radio=item.querySelector('input[type=radio]');
+    const input=item.querySelector('.q-option-text');
+    if(radio) radio.value=i;
+    if(input) input.placeholder=`Option ${i+1}`;
+  });
+  if(wasChecked || !options.querySelector('input[type=radio]:checked')){
+    options.querySelector('input[type=radio]')?.click();
+  }
 }
 async function submitQuiz(){
   const title=document.getElementById('qz-title').value.trim(), durationMinutes=Number(document.getElementById('qz-duration').value)||10;
@@ -145,7 +198,12 @@ async function submitQuiz(){
     questions.push({text,options,correctIndex,marks,isCode});
   }
   if(!title||!questions.length){err.textContent='Add a title and at least one question.';err.style.display='block';return;}
-  try{const q=await apiPost('/api/admin/quizzes',{title,durationMinutes,questions},{headers:authHeaders()});openMonitor(q.id);}
+  try{
+    const endpoint = editingQuizId ? `/api/admin/quizzes/${editingQuizId}/edit-copy` : '/api/admin/quizzes';
+    const q=await apiPost(endpoint,{title,durationMinutes,questions},{headers:authHeaders()});
+    editingQuizId=null;
+    openMonitor(q.id);
+  }
   catch(e){err.textContent=e.message;err.style.display='block';}
 }
 async function openMonitor(id){
