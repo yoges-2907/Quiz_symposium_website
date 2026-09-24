@@ -101,7 +101,7 @@ function addQuestion(){
   wrap.className='qbuilder-q'; wrap.id=`qbuild-${qid}`;
   wrap.innerHTML=`<div class="row between"><strong>Question ${qid}</strong>
     <button class="icon-btn" onclick="document.getElementById('qbuild-${qid}').remove()">Remove</button></div>
-    <label>Question text</label><textarea rows="2" class="q-text" placeholder="Question"></textarea>
+    <label>Question text</label><textarea rows="2" class="q-text" placeholder="Question" oninput="autoResize(this)" style="overflow-y:hidden; resize:none;"></textarea>
     <label class="row" style="gap:8px; margin-top:10px;">
       <input type="checkbox" class="q-iscode" style="width:16px;height:16px;" onchange="onCodeToggle(this, ${qid})">
       <span class="muted" style="margin:0;">This question includes a code snippet</span>
@@ -114,12 +114,17 @@ function addQuestion(){
   const ow=wrap.querySelector('.q-options'); for(let i=0;i<4;i++) addOptionTo(ow,qid);
 }
 function addOption(btn){ addOptionTo(btn.previousElementSibling,btn.closest('.qbuilder-q').id.split('-')[1]); }
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = `${el.scrollHeight + 2}px`;
+}
 function onCodeToggle(checkbox, qid) {
   document.getElementById(`code-hint-${qid}`).classList.toggle('hidden', !checkbox.checked);
   const textarea = document.getElementById(`qbuild-${qid}`).querySelector('.q-text');
-  textarea.rows = checkbox.checked ? 6 : 2;
   textarea.style.fontFamily = checkbox.checked ? "'Space Grotesk', monospace" : '';
+  textarea.style.whiteSpace = checkbox.checked ? 'pre' : 'normal';
   textarea.placeholder = checkbox.checked ? 'Paste the code snippet here, then ask your question in the text just before/after it' : 'Question';
+  autoResize(textarea);
 }
 function addOptionTo(ow,qid){
   const idx=ow.children.length,row=document.createElement('div');row.className='row';row.style.marginBottom='8px';
