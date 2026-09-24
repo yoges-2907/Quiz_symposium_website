@@ -275,6 +275,29 @@ app.post('/api/admin/quizzes/:id/duplicate', requireStaff, (req, res) => {
   res.json(adminQuizView(clone));
 });
 
+// Edit and reuse a quiz: creates a fresh draft from the edited questions.
+// The original quiz and its participant history remain unchanged.
+app.post('/api/admin/quizzes/:id/edit-copy', requireStaff, (req, res) => {
+  const q = ownedQuizOr404(req, res);
+  if (!q) return;
+  const { title, durationMinutes, questions } = req.body || {};
+  if (!title || !Array.isArray(questions) || !questions.length) {
+    return res.status(400).json({ error: 'Title and at least one question are required' });
+  }
+  for (const question of questions) {
+    if (!question.text || !Array.isArray(question.options) || question.options.length < 2) {
+      return res.status(400).json({ error: 'Each question needs text and at least 2 options' });
+    }
+    if (typeof question.correctIndex !== 'number' || question.correctIndex < 0 || question.correctIndex >= question.options.length) {
+      return res.status(400).json({ error: 'Each question needs a valid correct answer' });
+    }
+  }
+  const clone = buildQuiz({ title, durationMinutes, questions, ownerId: req.userId });
+  db.quizzes[clone.id] = clone;
+  persistQuiz(clone);
+  res.json(adminQuizView(clone));
+});
+
 app.post('/api/admin/quizzes/:id/start', requireStaff, (req, res) => {
   const q = ownedQuizOr404(req, res);
   if (!q) return;
