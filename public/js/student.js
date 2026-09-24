@@ -174,7 +174,9 @@ function renderQuestions() {
     .map(
       (q, qi) => `
     <div class="card plain">
-      <h3>${qi + 1}. ${escapeHtml(q.text)}</h3>
+      ${q.isCode
+        ? `<h3>Question ${qi + 1} <span class="muted" style="font-weight:400; font-size:0.85rem;">(code)</span></h3><pre class="code-block">${escapeHtml(q.text)}</pre>`
+        : `<h3>${qi + 1}. ${escapeHtml(q.text)}</h3>`}
       <div id="opts-${q.id}">
         ${q.options
           .map(
