@@ -78,7 +78,7 @@ async function handleJoin() {
   const code = document.getElementById('j-code').value.trim().toUpperCase();
   const name = document.getElementById('j-name').value.trim();
   const college = document.getElementById('j-college').value.trim();
-  const rollNo = document.getElementById('j-roll').value.trim();
+  const teamName = document.getElementById('j-team').value.trim();
   const errEl = document.getElementById('j-error');
   errEl.style.display = 'none';
 
@@ -88,7 +88,7 @@ async function handleJoin() {
     return;
   }
   try {
-    const data = await apiPost(`/api/quizzes/${code}/join`, { name, college, rollNo });
+    const data = await apiPost(`/api/quizzes/${code}/join`, { name, college, teamName });
     participantId = data.participantId;
     quiz = data.quiz;
     quizId = quiz.id;
@@ -290,7 +290,7 @@ async function showResults() {
         <td>${p.rank}</td>
         <td>${escapeHtml(p.name)}</td>
         <td>${escapeHtml(p.college || '—')}</td>
-        <td>${escapeHtml(p.rollNo || '—')}</td>
+        <td>${escapeHtml(p.teamName || '—')}</td>
         <td>${p.score} / ${p.maxScore}</td>
         <td>${fmtTime(p.timeTakenMs)}</td>
       </tr>`
