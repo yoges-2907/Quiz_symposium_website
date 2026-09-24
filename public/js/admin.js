@@ -102,6 +102,11 @@ function addQuestion(){
   wrap.innerHTML=`<div class="row between"><strong>Question ${qid}</strong>
     <button class="icon-btn" onclick="document.getElementById('qbuild-${qid}').remove()">Remove</button></div>
     <label>Question text</label><textarea rows="2" class="q-text" placeholder="Question"></textarea>
+    <label class="row" style="gap:8px; margin-top:10px;">
+      <input type="checkbox" class="q-iscode" style="width:16px;height:16px;" onchange="onCodeToggle(this, ${qid})">
+      <span class="muted" style="margin:0;">This question includes a code snippet</span>
+    </label>
+    <div id="code-hint-${qid}" class="muted hidden" style="margin:4px 0 0;">Paste the code as-is — line breaks and indentation will be shown exactly as typed, in a monospace font, for students.</div>
     <div class="grid-2"><div><label>Marks</label><input type="number" class="q-marks" value="1" min="1"></div></div>
     <label>Options — mark the correct one</label><div class="q-options"></div>
     <button class="btn secondary small" type="button" onclick="addOption(this)">+ Add option</button>`;
@@ -109,6 +114,13 @@ function addQuestion(){
   const ow=wrap.querySelector('.q-options'); for(let i=0;i<4;i++) addOptionTo(ow,qid);
 }
 function addOption(btn){ addOptionTo(btn.previousElementSibling,btn.closest('.qbuilder-q').id.split('-')[1]); }
+function onCodeToggle(checkbox, qid) {
+  document.getElementById(`code-hint-${qid}`).classList.toggle('hidden', !checkbox.checked);
+  const textarea = document.getElementById(`qbuild-${qid}`).querySelector('.q-text');
+  textarea.rows = checkbox.checked ? 6 : 2;
+  textarea.style.fontFamily = checkbox.checked ? "'Space Grotesk', monospace" : '';
+  textarea.placeholder = checkbox.checked ? 'Paste the code snippet here, then ask your question in the text just before/after it' : 'Question';
+}
 function addOptionTo(ow,qid){
   const idx=ow.children.length,row=document.createElement('div');row.className='row';row.style.marginBottom='8px';
   row.innerHTML=`<input type="radio" name="correct-${qid}" value="${idx}" ${idx===0?'checked':''} style="width:17px;height:17px;flex-shrink:0;">
@@ -121,10 +133,11 @@ async function submitQuiz(){
   const err=document.getElementById('builder-error');err.style.display='none';const questions=[];
   for(const block of document.querySelectorAll('.qbuilder-q')){
     const text=block.querySelector('.q-text').value.trim(),marks=Number(block.querySelector('.q-marks').value)||1;
+    const isCode=block.querySelector('.q-iscode').checked;
     const options=Array.from(block.querySelectorAll('.q-option-text')).map(i=>i.value.trim());
     const r=block.querySelector('input[type=radio]:checked');const correctIndex=r?Number(r.value):-1;
     if(!text||options.some(o=>!o)||options.length<2||correctIndex<0){err.textContent='Every question needs text, 2+ filled options and a correct answer.';err.style.display='block';return;}
-    questions.push({text,options,correctIndex,marks});
+    questions.push({text,options,correctIndex,marks,isCode});
   }
   if(!title||!questions.length){err.textContent='Add a title and at least one question.';err.style.display='block';return;}
   try{const q=await apiPost('/api/admin/quizzes',{title,durationMinutes,questions},{headers:authHeaders()});openMonitor(q.id);}
